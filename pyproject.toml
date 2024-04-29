@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "cyberfinance-bot"
+version = "0.1.0"
+description = ""
+authors = ["hachimaru <74972395+xxspell@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+aiohttp = "^3.9.5"
+aiosocksy = "^0.1.2"
+structlog = "^24.1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
