@@ -11,7 +11,7 @@ from utils.logging import logger
 from utils.time import minutes_until
 
 class CyberFinance:
-    def __init__(self, user_id, proxy, i):
+    def __init__(self, user_id, squad_id, proxy, i):
         self.user_id = user_id
         self.i = i
         self.access_token = None
@@ -20,25 +20,34 @@ class CyberFinance:
         self.proxy = proxy
         self.crack_time = None
         self.user_agent = get_random_user_agent()
+        self.squad_id = squad_id
 
 
-    def _suffix(self, request):
-        response_data = json.loads(request)
-        mining_data = response_data['message'].get('miningData', {})
-        user_data = response_data['message'].get('userData', {})
-        squad_data = response_data['message'].get('squadData', {})
+    async def _suffix(self, request):
+        try:
 
-        crack_time = mining_data.get('crackTime')
+            response_data = json.loads(request)
+            mining_data = response_data['message'].get('miningData', {})
+            user_data = response_data['message'].get('userData', {})
+            squad_data = response_data['message'].get('squadData', {})
 
-        balance = user_data.get('balance')
+            crack_time = mining_data.get('crackTime')
 
-        squad_statistic = squad_data.get('statistic', {})
-        squad_title = squad_data['title']
-        squad_points = squad_statistic.get('points')
-        squad_user_count = squad_statistic.get('userCount')
-        squad_rank = squad_statistic.get('rank')
-        self.crack_time = crack_time
-        self.message_suffix = f"-- B: {balance} | SP: {squad_points} SU: {squad_user_count} SR: {squad_rank} N: {squad_title}| Next claim: {minutes_until(crack_time)} min."
+            balance = user_data.get('balance')
+
+            squad_statistic = squad_data.get('statistic', {})
+            squad_title = squad_data['title']
+            squad_points = squad_statistic.get('points')
+            squad_user_count = squad_statistic.get('userCount')
+            squad_rank = squad_statistic.get('rank')
+            self.crack_time = crack_time
+            self.message_suffix = f"-- B: {balance} | SP: {squad_points} SU: {squad_user_count} SR: {squad_rank} N: {squad_title}| Next claim: {minutes_until(crack_time)} min."
+        except Exception as e:
+            print(e)
+            await self.connect_to_squad(self.squad_id)
+
+
+
     async def _get(self, url, headers=None, data=None):
         for attempt in range(10):
             try:
@@ -167,7 +176,7 @@ class CyberFinance:
         request, code = await self._get('https://api.cyberfinance.xyz/api/v1/game/mining/gamedata', headers=headers)
         print(request, code)
         if code == 200 or code == 201:
-            self._suffix(request)
+            await self._suffix(request)
 
             return True, request
         elif code == 401:
@@ -176,6 +185,8 @@ class CyberFinance:
             await asyncio.sleep(10)
             await self.init_game()
             return await self.get_game_data()
+        else:
+            return False, request
 
     async def claim_reward(self):
         if not self.access_token:
@@ -196,8 +207,8 @@ class CyberFinance:
             await self.init_game()
             return await self.claim_reward()
         else:
-            mining_data, _code = await self.get_game_data()
-            logger.error(f"{self.message_prefix} Got {code} error. ", mining_data=mining_data, _code=_code, request=request)
+            # mining_data, _code = await self.get_game_data()
+            logger.error(f"{self.message_prefix} Got {code} error. ", mining_data="mining_data", _code="_code", request=request)
             return False
 
 
@@ -206,22 +217,18 @@ async def start_farming(user_id, proxy, task_number):
     error_count = 1
     config_data = load_config("config.json")
     squad_id = config_data.get("squad_id")
-    await asyncio.sleep(task_number * 0.1)
-    logger.debug(f"Start | {task_number} | {proxy} | {user_id}")
-    cf = CyberFinance(user_id, proxy, task_number)
-    try:
-
-        await cf.init_game()
-        await cf.connect_to_squad(squad_id)
-        await cf.get_game_data()
-
-    except:
-        pass
+    await asyncio.sleep(task_number * 0.9)
+    # logger.debug(f"Start | {task_number} | {proxy} | {user_id}")
+    cf = CyberFinance(user_id, squad_id, proxy, task_number)
+    await cf.init_game()
     while True:
-        try:
-            timestamp = cf.crack_time
-            current_time = time.time()
 
+        try:
+            await cf.connect_to_squad(squad_id)
+            await cf.get_game_data()
+        except:
+            pass
+        try:
             try:
                 timestamp = cf.crack_time
                 current_time = time.time()
@@ -234,6 +241,7 @@ async def start_farming(user_id, proxy, task_number):
                 # Можно выполнить какие-то дополнительные действия здесь
 
             await cf.claim_reward()
+            await cf.apply_boost('hammer')
             count =+ 1
             # logger.info(f"{cf.message_prefix} While {count} complete {cf.message_suffix}")
         except Exception as e:
