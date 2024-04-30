@@ -220,9 +220,17 @@ async def start_farming(user_id, proxy, task_number):
         try:
             timestamp = cf.crack_time
             current_time = time.time()
-            if timestamp > current_time:
-                logger.info(f"{cf.message_prefix} Claim unavaible - sleep {cf.message_suffix}")
-                await asyncio.sleep(timestamp - current_time)
+
+            try:
+                timestamp = cf.crack_time
+                current_time = time.time()
+
+                if timestamp is not None and timestamp > current_time:
+                    await asyncio.sleep(timestamp - current_time)
+            except TypeError as e:
+                print(f"Error: {e}. Get game gata")
+                await cf.get_game_data()
+                # Можно выполнить какие-то дополнительные действия здесь
 
             await cf.claim_reward()
             count =+ 1
