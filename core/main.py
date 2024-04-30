@@ -165,6 +165,7 @@ class CyberFinance:
         headers['authorization'] = f'Bearer {self.access_token}'
 
         request, code = await self._get('https://api.cyberfinance.xyz/api/v1/game/mining/gamedata', headers=headers)
+        print(request, code)
         if code == 200 or code == 201:
             self._suffix(request)
 
