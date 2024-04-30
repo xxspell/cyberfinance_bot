@@ -1,4 +1,5 @@
 import json
+import traceback
 
 import aiohttp
 import asyncio
@@ -45,7 +46,7 @@ class CyberFinance:
                     headers['User-Agent'] = self.user_agent
                     async with session.get(url, headers=headers, proxy=self.proxy) as response:
                         response_text = await response.text()
-                        # logger.debug(f"{self.message_prefix} GET - {url}", response=response_text, status=response.status)
+                       # logger.debug(f"{self.message_prefix} GET - {url}", response=response_text, status=response.status)
                         return response_text, response.status
             except aiohttp.ClientProxyConnectionError:
                 pass
@@ -100,10 +101,10 @@ class CyberFinance:
             # logger.debug(f"{self.message_prefix} Logged")
             return request
         elif code == 400:
-            # logger.error(f"{self.message_prefix} 400 error not logged {self.message_suffix}", request=request, code=code)
+            logger.error(f"{self.message_prefix} 400 error not logged {self.message_suffix}", request=request, code=code)
             return False
         elif code == 403:
-            # logger.error(f"{self.message_prefix} 403 error not logged  {self.message_suffix}", request=request, code=code)
+            logger.error(f"{self.message_prefix} 403 error not logged  {self.message_suffix}", request=request, code=code)
             return False
 
 
@@ -133,7 +134,7 @@ class CyberFinance:
             return False, request
         elif code == 401:
             # Если получен код 401, повторно вызываем функцию apply_boost
-            # logger.error(f"{self.message_prefix} Got 401 error. Retrying... {request}")
+            logger.error(f"{self.message_prefix} Got 401 error. Retrying... {request}")
             await asyncio.sleep(10)
             await self.init_game()
             return await self.apply_boost(boost_type)
@@ -151,7 +152,7 @@ class CyberFinance:
             return True, request
         elif code == 401:
             # Если получен код 401, повторно вызываем функцию apply_boost
-            # logger.error(f"{self.message_prefix} connect Got 401 error. Retrying... {request}")
+            logger.error(f"{self.message_prefix} connect Got 401 error. Retrying... {request}")
             await asyncio.sleep(10)
             await self.init_game()
             return await self.connect_to_squad(squad_uuid)
@@ -170,7 +171,7 @@ class CyberFinance:
             return True, request
         elif code == 401:
             # Если получен код 401, повторно вызываем функцию apply_boost
-            # logger.error(f"{self.message_prefix} gamedata Got 401 error. Retrying... {request}")
+            logger.error(f"{self.message_prefix} gamedata Got 401 error. Retrying... {request}")
             await asyncio.sleep(10)
             await self.init_game()
             return await self.get_game_data()
@@ -189,7 +190,7 @@ class CyberFinance:
             return True
         elif code == 401:
             # Если получен код 401, повторно вызываем функцию apply_boost
-            # logger.error(f"{self.message_prefix} claim Got 401 error. Retrying... {request} ")
+            logger.error(f"{self.message_prefix} claim Got 401 error. Retrying... {request} ")
             await asyncio.sleep(10)
             await self.init_game()
             return await self.claim_reward()
@@ -211,13 +212,12 @@ async def start_farming(user_id, proxy, task_number):
 
         await cf.init_game()
         await cf.connect_to_squad(squad_id)
+        await cf.get_game_data()
 
     except:
         pass
     while True:
         try:
-            await cf.get_game_data()
-
             timestamp = cf.crack_time
             current_time = time.time()
             if timestamp > current_time:
@@ -230,6 +230,7 @@ async def start_farming(user_id, proxy, task_number):
         except Exception as e:
 
             logger.error(f"{cf.message_prefix} An error occurred: {e}. Retrying in {10 * error_count} secs...")
+            logger.error(traceback.format_exc())
             await asyncio.sleep(10 * error_count)
             error_count = + 1
 
