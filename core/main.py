@@ -41,7 +41,7 @@ class CyberFinance:
             squad_user_count = squad_statistic.get('userCount')
             squad_rank = squad_statistic.get('rank')
             self.crack_time = crack_time
-            self.message_suffix = f"-- B: {balance} | SP: {squad_points} SU: {squad_user_count} SR: {squad_rank} N: {squad_title}| Next claim: {minutes_until(crack_time)} min."
+            self.message_suffix = f"|| B: {balance} | SP: {squad_points} SU: {squad_user_count} SR: {squad_rank} N: {squad_title}| Next claim: {minutes_until(crack_time)} min."
         except Exception as e:
             print(e)
             await self.connect_to_squad(self.squad_id)

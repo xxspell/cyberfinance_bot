@@ -1,51 +1,60 @@
+from itertools import cycle
+from better_proxy import Proxy
+from os.path import isdir
 import asyncio
-import itertools
-import random
-
-from core.main import start_farming
-
-
-async def run(user_ids_file, proxies_file):
-    user_ids = []
-    proxies = []
-
-    # Загрузка идентификаторов пользователей из файла
-    with open(user_ids_file, 'r') as f:
-        user_ids = [line.strip() for line in f.readlines()]
-        random.shuffle(user_ids)
+from os import listdir
+from os import mkdir
+from os.path import exists
+from sys import stderr
 
 
-    # Загрузка прокси из файла
-    with open(proxies_file, 'r') as f:
-        proxies = [line.strip() for line in f.readlines()]
-        random.shuffle(proxies)
-    print(f"Loaded {len(proxies)} proxies, {len(user_ids)} ids")
-
-    # Создание экземпляров CyberFinance для каждого пользователя и прокси
-    tasks = []
-    task_number = 1
-    proxy_cycle = itertools.cycle(proxies)
-    for user_id in user_ids:
-        proxy = next(proxy_cycle)
-        task = asyncio.create_task(start_farming(user_id, proxy, task_number))  # Пример вызова одного из методов
-
-        tasks.append(task)
-        task_number += 1
-
-    # Параллельное выполнение всех задач
-    results = await asyncio.gather(*tasks)
+from core import create_sessions, start_farming
+from database import on_startup_database
+# from utils import monkeypatching
 
 
+async def main() -> None:
+    await on_startup_database()
 
-async def main():
-    art = """
-         /)              /) ,                       /)       
- _      (/_  _  __      //   __   _  __   _   _    (/_ ____/_
-(__(_/_/_) _(/_/ (_    /(__(_/ (_(_(_/ (_(___(/_  /_) (_) (__
-  .-/                 /)                                     
- (_/                 (/                                      
-"""
-    print(art)
-    await run("user_ids.txt", "proxies.txt")
+    match user_action:
+        case 1:
+            await create_sessions()
 
-asyncio.run(main())
+            print('Сессии успешно добавлены')
+
+        case 2:
+            tasks: list = [
+                asyncio.create_task(coro=start_farming(session_name=current_session_name, task_number=index))
+                for index, current_session_name in enumerate(session_files)
+            ]
+
+            await asyncio.gather(*tasks)
+
+        case _:
+            print('Действие выбрано некорректно')
+
+
+if __name__ == '__main__':
+    if not exists(path='sessions'):
+        mkdir(path='sessions')
+
+    session_files: list[str] = [current_file[:-8] if current_file.endswith('.session')
+                                else current_file for current_file in listdir(path='sessions')
+                                if current_file.endswith('.session') or isdir(s=f'sessions/{current_file}')]
+
+    print(f'Обнаружено {len(session_files)} сессий')
+
+    user_action: int = int(input('\n1. Создать сессию'
+                                 '\n2. Запустить бота с существующих сессий'
+                                 '\nВыберите ваше действие: '))
+    print()
+
+    # try:
+    #     import uvloop
+    #
+    #     uvloop.run(main())
+    #
+    # except ModuleNotFoundError:
+    asyncio.run(main())
+
+    input('\n\nPress Enter to Exit..')
