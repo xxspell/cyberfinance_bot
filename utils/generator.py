@@ -2,7 +2,7 @@ import random
 import string
 import secrets
 import hashlib
-
+from fake_useragent import UserAgent
 
 class Utils:
     def generate_random_hash(length):
@@ -25,8 +25,10 @@ headers_base = {
             'content-type': 'application/json',
             'origin': 'https://game.cyberfinance.xyz',
             'referer': 'https://game.cyberfinance.xyz/',
-            'accept-language': 'ru,en;q=0.9,en-GB;q=0.8,en-US;q=0.7'
+            'accept-language': 'ru,en;q=0.9,en-GB;q=0.8,en-US;q=0.7',
+            'User-Agent': str(UserAgent(os='windows', browsers=['edge']).random)
         }
+
 
 
 user_agents = [

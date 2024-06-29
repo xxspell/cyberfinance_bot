@@ -7,7 +7,8 @@ async def on_startup_database() -> None:
         CREATE TABLE IF NOT EXISTS sessions (
             id INTEGER PRIMARY KEY,
             session_name TEXT,
-            session_proxy TEXT
+            session_proxy TEXT,
+            tg_web_data TEXT
         );
         """)
         await db.commit()
